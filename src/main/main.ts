@@ -78,17 +78,37 @@ const createWindow = async () => {
     },
   });
 
-  mainWindow.loadURL(resolveHtmlPath('index.html'));
+  var loader = new BrowserWindow({
+    width: 1024,
+    height: 728,
+    icon: getAssetPath('icon.png'),
+    transparent: true,
+    frame: false,
+    titleBarStyle: 'hidden',
+    webPreferences: {
+      devTools: false,
+    },
+  });
 
+  loader.loadFile(path.resolve(__dirname, '../loader/loader.html'));
+  loader.center();
+  loader.show();
+
+  mainWindow.loadURL(resolveHtmlPath('index.html'));
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
     }
-    if (process.env.START_MINIMIZED) {
-      mainWindow.minimize();
-    } else {
-      mainWindow.show();
-    }
+    // wait 5 seconds before showing the main window
+    setTimeout(() => {
+      loader.close();
+      if (process.env.START_MINIMIZED) {
+        mainWindow?.minimize();
+      } else {
+        mainWindow?.show();
+      }
+      mainWindow?.center();
+    }, 1000);
   });
 
   mainWindow.on('closed', () => {

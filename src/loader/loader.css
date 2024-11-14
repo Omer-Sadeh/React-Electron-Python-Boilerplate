@@ -1,0 +1,38 @@
+body {
+    position: relative;
+    color: white;
+    height: 100vh;
+    background: linear-gradient(
+            200.96deg,
+            #fedc2a -29.09%,
+            #dd5789 51.77%,
+            #7a2c9e 129.35%
+    );
+    font-family: sans-serif;
+    overflow-y: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loader {
+    text-align: center;
+}
+
+.floating-image {
+    width: 100px;  /* Change to desired width */
+    height: auto;  /* Maintain aspect ratio */
+    animation: float 3s ease-in-out infinite; /* Adjust speed of floating */
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-20px); /* Change this value for more or less float */
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
