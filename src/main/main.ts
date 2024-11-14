@@ -28,6 +28,7 @@ class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 let loaderWindow: BrowserWindow | null = null;
+let pyproc: any = null;
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -129,43 +130,45 @@ const createMainWindow = async () => {
   new AppUpdater();
 };
 
+const startPythonBackend = async () => {
+  let availablePort = await getPort({ port: 5000 });
+  ipcMain.on('ipc-port', async (event, arg) => {
+    event.returnValue = availablePort;
+  });
+
+  pyproc = null;
+  let pythonPath = process.env.NODE_ENV !== 'development' ? path.join(__dirname, '../../..', 'pythondist/app/app') : "backend/app.py"
+
+  if (fs.existsSync(pythonPath)) {
+    if (process.env.NODE_ENV === 'development') {
+      pyproc = spawn(`python3 ` + pythonPath + ` ${availablePort}`, {
+        detached: false,
+        shell: true,
+        stdio: 'inherit'
+      });
+    } else {
+      const serverCmd = process.platform === 'win32' ? 'start ' + pythonPath + '.exe' : pythonPath;
+      pyproc = spawn(serverCmd + ` ${availablePort}`, { detached: false, shell: true, stdio: 'pipe' });
+    }
+
+    if (pyproc === null || pyproc == undefined) {
+      dialog.showErrorBox("Error", "Failed to start Python backend.");
+      app.quit();
+    }
+  } else {
+    dialog.showErrorBox("Error", "Python backend not found.");
+    app.quit();
+  }
+};
+
 /**
  * Add event listeners...
  */
 
 app.whenReady()
   .then(async () => {
-    createLoaderWindow();
-
-    let availablePort = await getPort({ port: 5000 });
-    ipcMain.on('ipc-port', async (event, arg) => {
-        event.returnValue = availablePort;
-    });
-
-    let pyproc = null;
-    let pythonPath = process.env.NODE_ENV !== 'development' ? path.join(__dirname, '../../..', 'pythondist/app/app') : "backend/app.py"
-
-    if (fs.existsSync(pythonPath)) {
-        if (process.env.NODE_ENV === 'development') {
-            pyproc = spawn(`python3 ` + pythonPath + ` ${availablePort}`, {
-                detached: false,
-                shell: true,
-                stdio: 'inherit'
-            });
-        } else {
-            const serverCmd = process.platform === 'win32' ? 'start ' + pythonPath + '.exe' : pythonPath;
-            pyproc = spawn(serverCmd + ` ${availablePort}`, { detached: false, shell: true, stdio: 'pipe' });
-        }
-
-        if (pyproc === null || pyproc == undefined) {
-            dialog.showErrorBox("Error", "Failed to start Python backend.");
-            app.quit();
-        }
-    } else {
-        dialog.showErrorBox("Error", "Python backend not found.");
-        app.quit();
-    }
-
+    await createLoaderWindow();
+    await startPythonBackend();
     createMainWindow();
 
     app.on('activate', () => {
