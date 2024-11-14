@@ -27,6 +27,7 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let loaderWindow: BrowserWindow | null = null;
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -53,7 +54,25 @@ const installExtensions = async () => {
     .catch(console.log);
 };
 
-const createWindow = async () => {
+const createLoaderWindow = async () => {
+  loaderWindow = new BrowserWindow({
+    width: 1024,
+    height: 728,
+    icon: path.join(__dirname, '../assets/icon.png'),
+    transparent: true,
+    frame: false,
+    titleBarStyle: 'hidden',
+    webPreferences: {
+      devTools: false,
+    },
+  });
+
+  loaderWindow.loadFile(path.resolve(__dirname, '../loader/loader.html'));
+  loaderWindow.center();
+  loaderWindow.show();
+};
+
+const createMainWindow = async () => {
   if (isDebug) {
     await installExtensions();
   }
@@ -78,37 +97,18 @@ const createWindow = async () => {
     },
   });
 
-  var loader = new BrowserWindow({
-    width: 1024,
-    height: 728,
-    icon: getAssetPath('icon.png'),
-    transparent: true,
-    frame: false,
-    titleBarStyle: 'hidden',
-    webPreferences: {
-      devTools: false,
-    },
-  });
-
-  loader.loadFile(path.resolve(__dirname, '../loader/loader.html'));
-  loader.center();
-  loader.show();
-
   mainWindow.loadURL(resolveHtmlPath('index.html'));
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
     }
-    // wait 5 seconds before showing the main window
-    setTimeout(() => {
-      loader.close();
-      if (process.env.START_MINIMIZED) {
-        mainWindow?.minimize();
-      } else {
-        mainWindow?.show();
-      }
-      mainWindow?.center();
-    }, 1000);
+    loaderWindow?.close();
+    if (process.env.START_MINIMIZED) {
+      mainWindow?.minimize();
+    } else {
+      mainWindow?.show();
+    }
+    mainWindow?.center();
   });
 
   mainWindow.on('closed', () => {
@@ -135,45 +135,48 @@ const createWindow = async () => {
 
 app.whenReady()
   .then(async () => {
-      let availablePort = await getPort({ port: 5000 });
-      ipcMain.on('ipc-port', async (event, arg) => {
-          event.returnValue = availablePort;
-      });
+    createLoaderWindow();
 
-      let pyproc = null;
-      let pythonPath = process.env.NODE_ENV !== 'development' ? path.join(__dirname, '../../..', 'pythondist/app/app') : "backend/app.py"
+    let availablePort = await getPort({ port: 5000 });
+    ipcMain.on('ipc-port', async (event, arg) => {
+        event.returnValue = availablePort;
+    });
 
-      if (fs.existsSync(pythonPath)) {
-          if (process.env.NODE_ENV === 'development') {
-              pyproc = spawn(`python3 ` + pythonPath + ` ${availablePort}`, {
-                  detached: false,
-                  shell: true,
-                  stdio: 'inherit'
-              });
-          } else {
-              const serverCmd = process.platform === 'win32' ? 'start ' + pythonPath + '.exe' : pythonPath;
-              pyproc = spawn(serverCmd + ` ${availablePort}`, { detached: false, shell: true, stdio: 'pipe' });
-          }
+    let pyproc = null;
+    let pythonPath = process.env.NODE_ENV !== 'development' ? path.join(__dirname, '../../..', 'pythondist/app/app') : "backend/app.py"
 
-          if (pyproc === null || pyproc == undefined) {
-              dialog.showErrorBox("Error", "Failed to start Python backend.");
-              app.quit();
-          }
-      } else {
-          dialog.showErrorBox("Error", "Python backend not found.");
-          app.quit();
-      }
+    if (fs.existsSync(pythonPath)) {
+        if (process.env.NODE_ENV === 'development') {
+            pyproc = spawn(`python3 ` + pythonPath + ` ${availablePort}`, {
+                detached: false,
+                shell: true,
+                stdio: 'inherit'
+            });
+        } else {
+            const serverCmd = process.platform === 'win32' ? 'start ' + pythonPath + '.exe' : pythonPath;
+            pyproc = spawn(serverCmd + ` ${availablePort}`, { detached: false, shell: true, stdio: 'pipe' });
+        }
 
-      createWindow();
-      app.on('activate', () => {
-          // On macOS it's common to re-create a window in the app when the
-          // dock icon is clicked and there are no other windows open.
-          if (mainWindow === null) createWindow();
-      });
+        if (pyproc === null || pyproc == undefined) {
+            dialog.showErrorBox("Error", "Failed to start Python backend.");
+            app.quit();
+        }
+    } else {
+        dialog.showErrorBox("Error", "Python backend not found.");
+        app.quit();
+    }
 
-      app.on('window-all-closed', () => {
-          pyproc?.kill();
-          app.quit();
-      });
+    createMainWindow();
+
+    app.on('activate', () => {
+        // On macOS it's common to re-create a window in the app when the
+        // dock icon is clicked and there are no other windows open.
+        if (mainWindow === null) createMainWindow();
+    });
+
+    app.on('window-all-closed', () => {
+        pyproc?.kill();
+        app.quit();
+    });
   })
   .catch(console.log);
