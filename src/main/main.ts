@@ -29,6 +29,7 @@ class AppUpdater {
 let mainWindow: BrowserWindow | null = null;
 let loaderWindow: BrowserWindow | null = null;
 let pyproc: any = null;
+let pyport: number | null = null;
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -131,9 +132,9 @@ const createMainWindow = async () => {
 };
 
 const startPythonBackend = async () => {
-  let availablePort = await getPort({ port: 5000 });
+  pyport = await getPort({ port: 5000 });
   ipcMain.on('ipc-port', async (event, arg) => {
-    event.returnValue = availablePort;
+    event.returnValue = pyport;
   });
 
   pyproc = null;
@@ -141,14 +142,14 @@ const startPythonBackend = async () => {
 
   if (fs.existsSync(pythonPath)) {
     if (process.env.NODE_ENV === 'development') {
-      pyproc = spawn(`python3 ` + pythonPath + ` ${availablePort}`, {
+      pyproc = spawn(`python3 ` + pythonPath + ` ${pyport}`, {
         detached: false,
         shell: true,
         stdio: 'inherit'
       });
     } else {
       const serverCmd = process.platform === 'win32' ? 'start ' + pythonPath + '.exe' : pythonPath;
-      pyproc = spawn(serverCmd + ` ${availablePort}`, { detached: false, shell: true, stdio: 'pipe' });
+      pyproc = spawn(serverCmd + ` ${pyport}`, { detached: false, shell: true, stdio: 'pipe' });
     }
 
     if (pyproc === null || pyproc == undefined) {
@@ -161,6 +162,34 @@ const startPythonBackend = async () => {
   }
 };
 
+const testPythonBackend = async () => {
+  let tries = 10;
+  let response = null;
+  while (response === null && tries > 0) {
+    try {
+      response = await fetch(`http://localhost:${pyport}/check_initialization`);
+    } catch (err) {
+      tries--;
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+
+  if (response == null || response.status !== 200) {
+    console.log("Failed to connect to Python backend: " + response);
+    dialog.showErrorBox("Error", "Error while loading application. Please try again.");
+    app.quit();
+  } else {
+    let res = await response.json();
+    if (res.up) {
+      console.log("Python backend started successfully.");
+    } else {
+      console.log("Failed to connect to Python backend: " + res.message);
+      dialog.showErrorBox("Error", "Error while loading application. Please try again.");
+      app.quit();
+    }
+  }
+};
+
 /**
  * Add event listeners...
  */
@@ -168,7 +197,7 @@ const startPythonBackend = async () => {
 app.whenReady()
   .then(async () => {
     await createLoaderWindow();
-    await startPythonBackend();
+    await startPythonBackend().then(testPythonBackend);
     createMainWindow();
 
     app.on('activate', () => {

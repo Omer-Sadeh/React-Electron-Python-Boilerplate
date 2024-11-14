@@ -1,5 +1,6 @@
 import sys
 import random
+import time
 from typing import Annotated
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -30,6 +31,21 @@ async def unicorn_exception_handler(_: Request, exc: Exception):
         content={"message": f"An error occurred: {exc}" if IS_DEV else "An error occurred!"},
         headers={"Access-Control-Allow-Origin": "*"}
     )
+
+
+@app.get("/check_initialization")
+async def check_initialization():
+    # wait 2 seconds to simulate a slow initialization
+    time.sleep(2)
+
+    # app initialization validation here
+    # ...
+
+    # In case the validation fails, return "up": False and an error message to be shown in the frontend.
+    return {
+        "up": True,
+        "error": None
+    }
 
 
 """
