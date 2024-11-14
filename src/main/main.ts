@@ -16,7 +16,7 @@ import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import { spawn } from 'child_process';
 import fs from "fs";
-import { getPort } from "get-port-please";
+import { getPort } from 'scotty-beam-me-up';
 
 class AppUpdater {
   constructor() {
