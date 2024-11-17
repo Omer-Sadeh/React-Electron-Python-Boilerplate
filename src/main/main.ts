@@ -203,8 +203,15 @@ app.whenReady()
     });
 
     app.on('window-all-closed', () => {
-        pyproc?.kill();
+      // Respect the OSX convention of having the application in memory even
+      // after all windows have been closed
+      if (process.platform !== 'darwin') {
         app.quit();
+      }
+    });
+
+    app.on('before-quit', () => {
+      pyproc?.kill();
     });
   })
   .catch(console.log);
