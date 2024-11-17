@@ -58,18 +58,22 @@ const installExtensions = async () => {
 
 const createLoaderWindow = async () => {
   loaderWindow = new BrowserWindow({
-    width: 1024,
-    height: 728,
+    width: 200,
+    height: 200,
     icon: getAssetPath('icon.png'),
     transparent: true,
     frame: false,
     titleBarStyle: 'hidden',
+    movable: true,
+    resizable: false,
+    focusable: false,
     webPreferences: {
-      devTools: false,
+      devTools: false
     },
   });
 
-  loaderWindow.loadFile(path.resolve(__dirname, '../loader/loader.html'));
+  loaderWindow.setWindowButtonVisibility(false)
+  loaderWindow.loadFile(getAssetPath('loader/loader.html'));
   loaderWindow.center();
   loaderWindow.show();
 };
