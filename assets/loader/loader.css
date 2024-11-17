@@ -1,0 +1,40 @@
+body {
+    position: relative;
+    color: white;
+    height: 100vh;
+    background: #000000;
+    font-family: sans-serif;
+    overflow-y: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+    -webkit-app-region: drag;
+}
+
+.loader {
+    text-align: center;
+}
+
+.floating-image {
+    width: 100px;  /* Change to desired width */
+    height: auto;  /* Maintain aspect ratio */
+    animation: float 3s ease-in-out infinite; /* Adjust speed of floating */
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    user-drag: none;
+}
+
+@keyframes float {
+    0% {
+        width: 100px;
+    }
+    50% {
+        width: 120px;
+    }
+    100% {
+        width: 100px;
+    }
+}
