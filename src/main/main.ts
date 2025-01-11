@@ -100,7 +100,10 @@ const createMainWindow = async () => {
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
     }
-    loaderWindow?.close();
+    if (loaderWindow !== null && !loaderWindow.isDestroyed()) {
+      loaderWindow.close();
+    }
+
     if (process.env.START_MINIMIZED) {
       mainWindow?.minimize();
     } else {
