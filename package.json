@@ -214,7 +214,7 @@
       "./pythondist/**"
     ]
   },
-  "devEngines": {
+  "engines": {
     "node": ">=14.x",
     "npm": ">=7.x"
   },
