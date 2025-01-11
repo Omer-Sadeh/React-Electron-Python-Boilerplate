@@ -2,6 +2,7 @@ import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 import React from 'react';
 import { get, post } from '../requests/requests';
+import { Counter } from './redux/reducers/counter/Counter';
 
 function Examples() {
   const [min, setMin] = React.useState(0);
@@ -54,6 +55,8 @@ function Examples() {
       <label>Max: </label>
       <input type="number" value={max} onChange={e => setMax(parseInt(e.target.value))} /><br />
       <button onClick={postExample}>Random Range</button>
+      <br/><br/>
+      <Counter />
     </div>
   );
 }
