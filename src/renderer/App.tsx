@@ -2,14 +2,14 @@ import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 import React, { useState } from 'react';
 import { get, post } from '../requests/requests';
-import { useAppDispatch, useAppSelector } from './redux/hooks';
+import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import {
   decrement,
   increment,
   incrementAsync,
   incrementByAmount, incrementIfOdd,
   selectCount
-} from './redux/reducers/counterSlice';
+} from '../redux/reducers/counterSlice';
 
 function Examples() {
   const [min, setMin] = useState(0);
