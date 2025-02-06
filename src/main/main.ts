@@ -131,7 +131,19 @@ const createMainWindow = async () => {
 };
 
 const startPythonBackend = async () => {
-  pyport = await getPort({ port: 5000 });
+  for (let i = 0; i < 10; i++) {
+    try {
+      pyport = await getPort({ port: 5000 });
+      break;
+    } catch (err) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      pyport = null;
+    }
+  }
+  if (pyport === null) {
+    dialog.showErrorBox("Error", "Failed to start app, please try again later.");
+    app.quit();
+  }
   ipcMain.on('ipc-port', async (event, arg) => {
     event.returnValue = pyport;
   });
